@@ -30,26 +30,26 @@ while True:
     success, img = cap.read()
     results = model(img, stream=True)
 
-    # Coordinates
+   
     for r in results:
         boxes = r.boxes
         for box in boxes:
-            # Bounding box
+            
             x1, y1, x2, y2 = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)  # Convert to int values
+            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)  
 
-            # Put box in cam
-            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)  # Thicker box
+           
+            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2) 
 
-            # Confidence
+         
             confidence = math.ceil((box.conf[0]*100))/100
             print("Confidence --->", confidence)
 
-            # Class name
+          
             cls = int(box.cls[0])
             print("Class name -->", classNames[cls])
 
-            # Object details
+         
             org = [x1, y1]
             font = cv2.FONT_HERSHEY_SIMPLEX
             fontScale = 1
@@ -57,10 +57,10 @@ while True:
             thickness = 2
             cv2.putText(img, classNames[cls], org, font, fontScale, color, thickness)
 
-    # Display the output
+   
     cv2.imshow('Webcam', img)
 
-    # Exit on 'q' key press
+ 
     if cv2.waitKey(1) == ord('q'):
         break
 
