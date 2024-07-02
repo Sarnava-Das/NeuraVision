@@ -1,83 +1,61 @@
+from ultralytics import YOLO
 import cv2
-import numpy as np
+import math
 
-->i like you<-
-net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
-layer_names = net.getLayerNames()
-output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
+# Start webcam
+cap = cv2.VideoCapture(0)
+cap.set(3, 640)
+cap.set(4, 480)
 
+# Model
+model = YOLO("yolo-Weights/yolov8n.pt")
 
-def detect_objects(image):
+# Object classes
+classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
+              "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
+              "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
+              "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat",
+              "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup",
+              "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli",
+              "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed",
+              "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone",
+              "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors",
+              "teddy bear", "hair drier", "toothbrush"]
 
-    height, width, channels = image.shape
+while True:
+    success, img = cap.read()
+    results = model(img, stream=True)
 
+    # Coordinates
+    for r in results:
+        boxes = r.boxes
+        for box in boxes:
+            # Bounding box
+            x1, y1, x2, y2 = box.xyxy[0]
+            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)  # Convert to int values
 
-    blob = cv2.dnn.blobFromImage(image, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+            # Put box in cam
+            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
 
+            # Confidence
+            confidence = math.ceil((box.conf[0]*100))/100
+            print("Confidence --->", confidence)
 
-    net.setInput(blob)
+            # Class name
+            cls = int(box.cls[0])
+            print("Class name -->", classNames[cls])
 
+            # Object details
+            org = [x1, y1]
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            fontScale = 1
+            color = (255, 0, 0)
+            thickness = 2
+            cv2.putText(img, classNames[cls], org, font, fontScale, color, thickness)
 
-    outs = net.forward(output_layers)
+    cv2.imshow('Webcam', img)
+    if cv2.waitKey(1) == ord('q'):
+        break
 
-
-    class_ids = []
-    confidences = []
-    boxes = []
-    for out in outs:
-        for detection in out:
-            scores = detection[5:]
-            class_id = np.argmax(scores)
-            confidence = scores[class_id]
-            if confidence > 0.5:
-  
-                center_x = int(detection[0] * width)
-                center_y = int(detection[1] * height)
-                w = int(detection[2] * width)
-                h = int(detection[3] * height)
-                x = int(center_x - w / 2)
-                y = int(center_y - h / 2)
-                boxes.append([x, y, w, h])
-                confidences.append(float(confidence))
-                class_ids.append(class_id)
-
-
-    indexes = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold=0.5, nms_threshold=0.4)
-
-    for i in range(len(boxes)):
-        if i in indexes:
-            x, y, w, h = boxes[i]
-            label = str(class_ids[i])
-            cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(image, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-    return image
-
-
-def main():
-
-    cap = cv2.VideoCapture(0)
-
-    while True:
-
-        ret, frame = cap.read()
-        
-        if not ret:
-            break
-
-
-        processed_frame = detect_objects(frame)
-
-  
-        cv2.imshow('Object Detection using YOLO', processed_frame)
-
-   
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-if __name__ == '__main__':
-    main()
+cap.release()
+cv2.destroyAllWindows()
